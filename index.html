@@ -13,7 +13,6 @@
 
 <p>score: <span id="score">0</span></p>
 
-<!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
@@ -30,14 +29,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// スコア
+// スコア初期値
 window.score = 0;
 
-// スコア増やす
+// 表示更新関数
+function updateUI(){
+  document.getElementById("score").innerText = window.score;
+}
+
+// スコア増加
 window.addScore = function() {
   window.score += 1;
-  document.getElementById("score").innerText = window.score;
-
+  updateUI();
   saveScore(window.score);
 };
 
@@ -48,17 +51,20 @@ window.saveScore = async function(score){
   });
 };
 
-// 読み込み（復元）
+// 読み込み
 window.loadScore = async function(){
   const docSnap = await getDoc(doc(db, "scores", "player1"));
 
   if (docSnap.exists()) {
     window.score = docSnap.data().score;
-    document.getElementById("score").innerText = window.score;
+  } else {
+    window.score = 0;
   }
+
+  updateUI();
 };
 
-// 起動時ロード
+// 起動時ロード（これが重要）
 window.addEventListener("load", loadScore);
 
 </script>
