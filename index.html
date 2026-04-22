@@ -1,16 +1,63 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <meta charset="UTF-8">
+  <title>Chicken Game</title>
+</head>
+
 <body>
- <h2>Hello World!!</h2>
-    <p>hello,I'm <i><b>sen-3939</b></i>.<br>I'm from Japan.<br>I have a PC.<br>thank you!</p>
+
+<h2>Hello World!!</h2>
+
+<p>
+hello,I'm <i><b>sen-3939</b></i>.<br>
+I'm from Japan.<br>
+I have a PC.<br>
+thank you!
+</p>
+
 <button onclick="addScore()">押して</button>
+
 <p>score: <span id="score">0</span></p>
-<script>
-    let score =0;
-    function addScore() {
-        score +=1;
-        document.getElementById("score").innerText = score;
-    }
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCiLNuZIWvqpcLbBxuH7KXTxrXPPAgRCho",
+  authDomain: "chickin-game.firebaseapp.com",
+  projectId: "chickin-game",
+  storageBucket: "chickin-game.firebasestorage.app",
+  messagingSenderId: "1037683320121",
+  appId: "1:1037683320121:web:021e1f6b9f16e73949b4e8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// スコア保存（世界共有）
+window.saveScore = async function(score){
+  await setDoc(doc(db, "scores", "player1"), {
+    score: score
+  });
+};
 </script>
+
+<script>
+let score = 0;
+
+function addScore() {
+  score += 1;
+  document.getElementById("score").innerText = score;
+
+  // Firebaseにも送る
+  if (window.saveScore) {
+    window.saveScore(score);
+  }
+}
+</script>
+
 </body>
 </html>
