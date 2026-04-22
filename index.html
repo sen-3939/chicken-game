@@ -9,13 +9,6 @@
 
 <h2>Hello World!!</h2>
 
-<p>
-hello,I'm <i><b>sen-3939</b></i>.<br>
-I'm from Japan.<br>
-I have a PC.<br>
-thank you!
-</p>
-
 <button onclick="addScore()">押して</button>
 
 <p>score: <span id="score">0</span></p>
@@ -23,7 +16,7 @@ thank you!
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCiLNuZIWvqpcLbBxuH7KXTxrXPPAgRCho",
@@ -37,26 +30,37 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// スコア保存（世界共有）
+// スコア
+window.score = 0;
+
+// スコア増やす
+window.addScore = function() {
+  window.score += 1;
+  document.getElementById("score").innerText = window.score;
+
+  saveScore(window.score);
+};
+
+// 保存
 window.saveScore = async function(score){
   await setDoc(doc(db, "scores", "player1"), {
     score: score
   });
 };
-</script>
 
-<script>
-let score = 0;
+// 読み込み（復元）
+window.loadScore = async function(){
+  const docSnap = await getDoc(doc(db, "scores", "player1"));
 
-function addScore() {
-  score += 1;
-  document.getElementById("score").innerText = score;
-
-  // Firebaseにも送る
-  if (window.saveScore) {
-    window.saveScore(score);
+  if (docSnap.exists()) {
+    window.score = docSnap.data().score;
+    document.getElementById("score").innerText = window.score;
   }
-}
+};
+
+// 起動時ロード
+window.addEventListener("load", loadScore);
+
 </script>
 
 </body>
