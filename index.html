@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>スコアカウンター</title>
     <style>
-        /* 見た目の調整 */
         body {
             font-family: sans-serif;
             text-align: center;
@@ -33,16 +32,14 @@
 <body>
 
     <div class="score-container">
-        スコア: <span id="score"></span>
+        スコア: <span id="score">0</span>
     </div>
     <button onclick="window.addScore()">スコアアップ！</button>
 
     <script type="module">
-        // Firebaseの必要な機能を読み込み
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Firebaseの設定（★ご自身のプロジェクトの設定に書き換えてください★）
         const firebaseConfig = {
   apiKey: "AIzaSyCD26WdXWp8wAXwfXAMVNBCdB0ni-G2-Ak",
   authDomain: "test1-1ca88.firebaseapp.com",
@@ -53,13 +50,16 @@
   measurementId: "G-22940J9VLK"
 };
 
-        // Firebaseの初期化
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        window.score = 0;
+        // 【改善のキモ】ページを読み込んだ瞬間（Firebaseに繋ぐ前）に、パソコン内の記憶から即表示！
+        const localCachedScore = localStorage.getItem("last_score");
+        window.score = localCachedScore ? parseInt(localCachedScore, 10) : 0;
+        
+        // 画面がパッと開いた瞬間に、前回の数字を入れる（これで「一瞬0」も「空白」も起きない）
+        document.getElementById("score").innerText = window.score;
 
-        // UI（画面）の更新
         function updateUI(){
             const scoreDoc = document.getElementById("score");
             if (scoreDoc) {
@@ -67,43 +67,41 @@
             }
         }
 
-        // スコア増加＋即時保存（タイマーによる遅延を無くしました）
         window.addScore = function() {
             window.score += 1;
-            updateUI(); // 画面をすぐ更新
+            updateUI();
             
-            window.saveScore(window.score); // 0.5秒待たずに、その瞬間にFirebaseへ保存
+            // パソコン内（ローカル）とFirebase（クラウド）の両方に即時保存！
+            localStorage.setItem("last_score", window.score);
+            window.saveScore(window.score);
         };
 
-        // Firestoreへの保存
         window.saveScore = async function(score){
             try {
                 await setDoc(doc(db, "scores", "player1"), { score: score });
-                console.log("スコアを保存しました:", score);
+                console.log("Firebaseに保存しました:", score);
             } catch (error) {
                 console.error("保存エラー:", error);
             }
         };
 
-        // Firestoreからの読み込み
         window.loadScore = async function(){
             try {
                 const docSnap = await getDoc(doc(db, "scores", "player1"));
                 if (docSnap.exists()) {
-                    window.score = docSnap.data().score;
-                } else {
-                    window.score = 0;
+                    const cloudScore = docSnap.data().score;
+                    
+                    // 裏側でFirebaseの最新データに追いつかせる
+                    window.score = cloudScore;
+                    localStorage.setItem("last_score", cloudScore);
+                    updateUI();
                 }
-                updateUI(); // データが届いたタイミングで初めて画面に数字が出る
             } catch (error) {
                 console.error("読み込みエラー:", error);
-                // エラーが起きた場合も念のため0を表示してあげる
-                window.score = 0;
-                updateUI();
             }
         };
 
-        // ページが読み込まれたら実行
+        // ページが読み込まれたら裏でFirebaseの最新データをチェックしにいく
         window.addEventListener("load", window.loadScore);
     </script>
 </body>
