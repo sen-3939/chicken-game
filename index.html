@@ -1,73 +1,52 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Chicken Game</title>
-</head>
-
-<body>
-
-<h2>Hello World!!</h2>
-
-<button onclick="addScore()">押して</button>
-
-<p>score: <span id="score">0</span></p>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCiLNuZIWvqpcLbBxuH7KXTxrXPPAgRCho",
-  authDomain: "chickin-game.firebaseapp.com",
-  projectId: "chickin-game",
-  storageBucket: "chickin-game.firebasestorage.app",
-  messagingSenderId: "1037683320121",
-  appId: "1:1037683320121:web:021e1f6b9f16e73949b4e8"
-};
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// スコア初期値
 window.score = 0;
+let saveTimeout = null; // タイマー用の変数を追加
 
-// 表示更新関数
 function updateUI(){
   document.getElementById("score").innerText = window.score;
 }
 
-// スコア増加
+// スコア増加（画面はすぐ更新、保存は裏で遅延させる）
 window.addScore = function() {
   window.score += 1;
   updateUI();
-  saveScore(window.score);
+
+  // 前回の保存タイマーが残っていればキャンセル
+  clearTimeout(saveTimeout);
+
+  // 500ミリ秒（0.5秒）間、次のクリックがなければ保存を実行
+  saveTimeout = setTimeout(() => {
+    saveScore(window.score);
+  }, 500);
 };
 
 // 保存
 window.saveScore = async function(score){
-  await setDoc(doc(db, "scores", "player1"), {
-    score: score
-  });
+  try {
+    await setDoc(doc(db, "scores", "player1"), {
+      score: score
+    });
+    console.log("スコアを保存しました:", score);
+  } catch (error) {
+    console.error("保存エラー:", error);
+  }
 };
 
 // 読み込み
 window.loadScore = async function(){
-  const docSnap = await getDoc(doc(db, "scores", "player1"));
-
-  if (docSnap.exists()) {
-    window.score = docSnap.data().score;
-  } else {
-    window.score = 0;
+  try {
+    const docSnap = await getDoc(doc(db, "scores", "player1"));
+    if (docSnap.exists()) {
+      window.score = docSnap.data().score;
+    } else {
+      window.score = 0;
+    }
+    updateUI();
+  } catch (error) {
+    console.error("読み込みエラー:", error);
   }
-
-  updateUI();
 };
 
-// 起動時ロード（これが重要）
 window.addEventListener("load", loadScore);
-
-</script>
-
-</body>
-</html>
